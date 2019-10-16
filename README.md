@@ -1,4 +1,4 @@
-# nginx-vts-exporter
+# nginx-sts-exporter
 
 [![Build Status](https://travis-ci.org/hnlq715/nginx-vts-exporter.svg?branch=master)](https://travis-ci.org/hnlq715/nginx-vts-exporter)
 [![Docker Pulls](https://img.shields.io/docker/pulls/sophos/nginx-vts-exporter.svg)](https://hub.docker.com/r/sophos/nginx-vts-exporter)
@@ -6,7 +6,7 @@
 [![GitHub release](https://img.shields.io/github/release/hnlq715/nginx-vts-exporter.svg)](https://github.com/hnlq715/nginx-vts-exporter)
 [![Go Report Card](https://goreportcard.com/badge/github.com/hnlq715/nginx-vts-exporter)](https://goreportcard.com/report/github.com/hnlq715/nginx-vts-exporter)
 
-Simple server that scrapes Nginx [vts](https://github.com/vozlt/nginx-module-vts) stats and exports them via HTTP for Prometheus consumption
+Simple server that scrapes Nginx [sts](https://github.com/vozlt/nginx-module-vts) stats and exports them via HTTP for Prometheus consumption
 
 To support time related histogram metrics, please refer to [hnlq715/nginx-prometheus-metrics](https://github.com/hnlq715/nginx-prometheus-metrics) or [#43](https://github.com/hnlq715/nginx-vts-exporter/issues/43).
 
@@ -60,12 +60,12 @@ It can be used directly instead of having to build the image yourself.
 
 ### run binary
 ``` shell
-nohup /bin/nginx-vts-exporter -nginx.scrape_uri=http://localhost/status/format/json
+nohup /bin/nginx-sts-exporter -nginx.scrape_uri=http://localhost/status/format/json
 ```
 
 ### run docker
 ```
-docker run  -ti --rm --env NGINX_STATUS="http://localhost/status/format/json" sophos/nginx-vts-exporter
+docker run  -ti --rm --env NGINX_STATUS="http://localhost/status/format/json" sophos/nginx-sts-exporter
 ```
 
 ## Environment variables
@@ -83,7 +83,7 @@ METRICS_NS | nginx | Prometheus metrics Namespaces
 
 Documents about exposed Prometheus metrics.
 
-For details on the underlying metrics please see [nginx-module-vts](https://github.com/vozlt/nginx-module-vts#json-used-by-status)
+For details on the underlying metrics please see [nginx-module-sts](https://github.com/vozlt/nginx-module-sts#json-used-by-status)
 
 For grafana dashboard please see [nginx-vts-exporter dashboard](https://grafana.com/dashboards/2949)
 

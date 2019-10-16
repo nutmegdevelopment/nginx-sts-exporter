@@ -17,7 +17,7 @@ import (
 	"github.com/prometheus/common/version"
 )
 
-type NginxVts struct {
+type NginxSts struct {
 	HostName     string `json:"hostName"`
 	NginxVersion string `json:"nginxVersion"`
 	LoadMsec     int64  `json:"loadMsec"`
@@ -31,8 +31,8 @@ type NginxVts struct {
 		Handled  uint64 `json:"handled"`
 		Requests uint64 `json:"requests"`
 	} `json:"connections"`
-	ServerZones   map[string]Server              `json:"serverZones"`
-	UpstreamZones map[string][]Upstream          `json:"upstreamZones"`
+	ServerZones   map[string]Server              `json:"streamServerZones"`
+	UpstreamZones map[string][]Upstream          `json:"streamUpstreamZones"`
 	FilterZones   map[string]map[string]Upstream `json:"filterZones"`
 	CacheZones    map[string]Cache               `json:"cacheZones"`
 }
@@ -41,7 +41,7 @@ type Server struct {
 	RequestCounter uint64 `json:"requestCounter"`
 	InBytes        uint64 `json:"inBytes"`
 	OutBytes       uint64 `json:"outBytes"`
-	RequestMsec    uint64 `json:"requestMsec"`
+	SessionMsec    uint64 `json:"sessionMsec"`
 	Responses      struct {
 		OneXx       uint64 `json:"1xx"`
 		TwoXx       uint64 `json:"2xx"`
@@ -90,8 +90,7 @@ type Upstream struct {
 		FourXx  uint64 `json:"4xx"`
 		FiveXx  uint64 `json:"5xx"`
 	} `json:"responses"`
-	ResponseMsec uint64 `json:"responseMsec"`
-	RequestMsec  uint64 `json:"requestMsec"`
+	SessionMsec  uint64 `json:"uSessionMsec"`
 	Weight       uint64 `json:"weight"`
 	MaxFails     uint64 `json:"maxFails"`
 	FailTimeout  uint64 `json:"failTimeout"`
@@ -184,19 +183,17 @@ func NewExporter(uri string) *Exporter {
 			"requests":    newServerMetric("requests", "requests counter", []string{"host", "code"}),
 			"bytes":       newServerMetric("bytes", "request/response bytes", []string{"host", "direction"}),
 			"cache":       newServerMetric("cache", "cache counter", []string{"host", "status"}),
-			"requestMsec": newServerMetric("requestMsec", "average of request processing times in milliseconds", []string{"host"}),
+			"sessionMsec": newServerMetric("sessionMsec", "average of session processing times in milliseconds", []string{"host"}),
 		},
 		upstreamMetrics: map[string]*prometheus.Desc{
 			"requests":     newUpstreamMetric("requests", "requests counter", []string{"upstream", "code", "backend"}),
 			"bytes":        newUpstreamMetric("bytes", "request/response bytes", []string{"upstream", "direction", "backend"}),
-			"responseMsec": newUpstreamMetric("responseMsec", "average of only upstream/backend response processing times in milliseconds", []string{"upstream", "backend"}),
-			"requestMsec":  newUpstreamMetric("requestMsec", "average of request processing times in milliseconds", []string{"upstream", "backend"}),
+			"sessionMsec":  newUpstreamMetric("sessionMsec", "average of session processing times in milliseconds", []string{"upstream", "backend"}),
 		},
 		filterMetrics: map[string]*prometheus.Desc{
 			"requests":     newFilterMetric("requests", "requests counter", []string{"filter", "filterName", "code"}),
 			"bytes":        newFilterMetric("bytes", "request/response bytes", []string{"filter", "filterName", "direction"}),
-			"responseMsec": newFilterMetric("responseMsec", "average of only upstream/backend response processing times in milliseconds", []string{"filter", "filterName"}),
-			"requestMsec":  newFilterMetric("requestMsec", "average of request processing times in milliseconds", []string{"filter", "filterName"}),
+			"sessionMsec":  newFilterMetric("sessionMsec", "average of session processing times in milliseconds", []string{"filter", "filterName"}),
 		},
 		cacheMetrics: map[string]*prometheus.Desc{
 			"requests": newCacheMetric("requests", "cache requests counter", []string{"zone", "status"}),
@@ -234,28 +231,28 @@ func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 		return
 	}
 
-	var nginxVtx NginxVts
-	err = json.Unmarshal(data, &nginxVtx)
+	var nginxStx NginxSts
+	err = json.Unmarshal(data, &nginxStx)
 	if err != nil {
 		log.Println("json.Unmarshal failed", err)
 		return
 	}
 
 	// info
-	uptime := (nginxVtx.NowMsec - nginxVtx.LoadMsec) / 1000
-	ch <- prometheus.MustNewConstMetric(e.infoMetric, prometheus.GaugeValue, float64(uptime), nginxVtx.HostName, nginxVtx.NginxVersion)
+	uptime := (nginxStx.NowMsec - nginxStx.LoadMsec) / 1000
+	ch <- prometheus.MustNewConstMetric(e.infoMetric, prometheus.GaugeValue, float64(uptime), nginxStx.HostName, nginxStx.NginxVersion)
 
 	// connections
-	ch <- prometheus.MustNewConstMetric(e.serverMetrics["connections"], prometheus.GaugeValue, float64(nginxVtx.Connections.Active), "active")
-	ch <- prometheus.MustNewConstMetric(e.serverMetrics["connections"], prometheus.GaugeValue, float64(nginxVtx.Connections.Reading), "reading")
-	ch <- prometheus.MustNewConstMetric(e.serverMetrics["connections"], prometheus.GaugeValue, float64(nginxVtx.Connections.Waiting), "waiting")
-	ch <- prometheus.MustNewConstMetric(e.serverMetrics["connections"], prometheus.GaugeValue, float64(nginxVtx.Connections.Writing), "writing")
-	ch <- prometheus.MustNewConstMetric(e.serverMetrics["connections"], prometheus.GaugeValue, float64(nginxVtx.Connections.Accepted), "accepted")
-	ch <- prometheus.MustNewConstMetric(e.serverMetrics["connections"], prometheus.GaugeValue, float64(nginxVtx.Connections.Handled), "handled")
-	ch <- prometheus.MustNewConstMetric(e.serverMetrics["connections"], prometheus.GaugeValue, float64(nginxVtx.Connections.Requests), "requests")
+	ch <- prometheus.MustNewConstMetric(e.serverMetrics["connections"], prometheus.GaugeValue, float64(nginxStx.Connections.Active), "active")
+	ch <- prometheus.MustNewConstMetric(e.serverMetrics["connections"], prometheus.GaugeValue, float64(nginxStx.Connections.Reading), "reading")
+	ch <- prometheus.MustNewConstMetric(e.serverMetrics["connections"], prometheus.GaugeValue, float64(nginxStx.Connections.Waiting), "waiting")
+	ch <- prometheus.MustNewConstMetric(e.serverMetrics["connections"], prometheus.GaugeValue, float64(nginxStx.Connections.Writing), "writing")
+	ch <- prometheus.MustNewConstMetric(e.serverMetrics["connections"], prometheus.GaugeValue, float64(nginxStx.Connections.Accepted), "accepted")
+	ch <- prometheus.MustNewConstMetric(e.serverMetrics["connections"], prometheus.GaugeValue, float64(nginxStx.Connections.Handled), "handled")
+	ch <- prometheus.MustNewConstMetric(e.serverMetrics["connections"], prometheus.GaugeValue, float64(nginxStx.Connections.Requests), "requests")
 
 	// ServerZones
-	for host, s := range nginxVtx.ServerZones {
+	for host, s := range nginxStx.ServerZones {
 		ch <- prometheus.MustNewConstMetric(e.serverMetrics["requests"], prometheus.CounterValue, float64(s.RequestCounter), host, "total")
 		ch <- prometheus.MustNewConstMetric(e.serverMetrics["requests"], prometheus.CounterValue, float64(s.Responses.OneXx), host, "1xx")
 		ch <- prometheus.MustNewConstMetric(e.serverMetrics["requests"], prometheus.CounterValue, float64(s.Responses.TwoXx), host, "2xx")
@@ -275,15 +272,14 @@ func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 		ch <- prometheus.MustNewConstMetric(e.serverMetrics["bytes"], prometheus.CounterValue, float64(s.InBytes), host, "in")
 		ch <- prometheus.MustNewConstMetric(e.serverMetrics["bytes"], prometheus.CounterValue, float64(s.OutBytes), host, "out")
 
-		ch <- prometheus.MustNewConstMetric(e.serverMetrics["requestMsec"], prometheus.GaugeValue, float64(s.RequestMsec), host)
+		ch <- prometheus.MustNewConstMetric(e.serverMetrics["sessionMsec"], prometheus.GaugeValue, float64(s.SessionMsec), host)
 
 	}
 
 	// UpstreamZones
-	for name, upstreamList := range nginxVtx.UpstreamZones {
+	for name, upstreamList := range nginxStx.UpstreamZones {
 		for _, s := range upstreamList {
-			ch <- prometheus.MustNewConstMetric(e.upstreamMetrics["responseMsec"], prometheus.GaugeValue, float64(s.ResponseMsec), name, s.Server)
-			ch <- prometheus.MustNewConstMetric(e.upstreamMetrics["requestMsec"], prometheus.GaugeValue, float64(s.RequestMsec), name, s.Server)
+			ch <- prometheus.MustNewConstMetric(e.upstreamMetrics["sessionMsec"], prometheus.GaugeValue, float64(s.SessionMsec), name, s.Server)
 
 			ch <- prometheus.MustNewConstMetric(e.upstreamMetrics["requests"], prometheus.CounterValue, float64(s.RequestCounter), name, "total", s.Server)
 			ch <- prometheus.MustNewConstMetric(e.upstreamMetrics["requests"], prometheus.CounterValue, float64(s.Responses.OneXx), name, "1xx", s.Server)
@@ -298,10 +294,9 @@ func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 	}
 
 	// FilterZones
-	for filter, values := range nginxVtx.FilterZones {
+	for filter, values := range nginxStx.FilterZones {
 		for name, stat := range values {
-			ch <- prometheus.MustNewConstMetric(e.filterMetrics["responseMsec"], prometheus.GaugeValue, float64(stat.ResponseMsec), filter, name)
-			ch <- prometheus.MustNewConstMetric(e.filterMetrics["requestMsec"], prometheus.GaugeValue, float64(stat.RequestMsec), filter, name)
+			ch <- prometheus.MustNewConstMetric(e.filterMetrics["sessionMsec"], prometheus.GaugeValue, float64(stat.SessionMsec), filter, name)
 			ch <- prometheus.MustNewConstMetric(e.filterMetrics["requests"], prometheus.CounterValue, float64(stat.RequestCounter), filter, name, "total")
 			ch <- prometheus.MustNewConstMetric(e.filterMetrics["requests"], prometheus.CounterValue, float64(stat.Responses.OneXx), filter, name, "1xx")
 			ch <- prometheus.MustNewConstMetric(e.filterMetrics["requests"], prometheus.CounterValue, float64(stat.Responses.TwoXx), filter, name, "2xx")
@@ -315,7 +310,7 @@ func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 	}
 
 	// CacheZones
-	for zone, s := range nginxVtx.CacheZones {
+	for zone, s := range nginxStx.CacheZones {
 		ch <- prometheus.MustNewConstMetric(e.cacheMetrics["requests"], prometheus.CounterValue, float64(s.Responses.Bypass), zone, "bypass")
 		ch <- prometheus.MustNewConstMetric(e.cacheMetrics["requests"], prometheus.CounterValue, float64(s.Responses.Expired), zone, "expired")
 		ch <- prometheus.MustNewConstMetric(e.cacheMetrics["requests"], prometheus.CounterValue, float64(s.Responses.Hit), zone, "hit")
@@ -358,18 +353,18 @@ var (
 )
 
 func init() {
-	prometheus.MustRegister(version.NewCollector("nginx_vts_exporter"))
+	prometheus.MustRegister(version.NewCollector("nginx_sts_exporter"))
 }
 
 func main() {
 	flag.Parse()
 
 	if *showVersion {
-		fmt.Fprintln(os.Stdout, version.Print("nginx_vts_exporter"))
+		fmt.Fprintln(os.Stdout, version.Print("nginx_sts_exporter"))
 		os.Exit(0)
 	}
 
-	log.Printf("Starting nginx_vts_exporter %s", version.Info())
+	log.Printf("Starting nginx_sts_exporter %s", version.Info())
 	log.Printf("Build context %s", version.BuildContext())
 
 	exporter := NewExporter(*nginxScrapeURI)
