@@ -1,5 +1,5 @@
 FROM        quay.io/prometheus/busybox:latest
-MAINTAINER  Sophos <devops@nutmeg.com>
+MAINTAINER  Bomb Squad <devops@nutmeg.com>
 
 COPY nginx-sts-exporter  /bin/nginx-sts-exporter
 COPY docker-entrypoint.sh /bin/docker-entrypoint.sh
