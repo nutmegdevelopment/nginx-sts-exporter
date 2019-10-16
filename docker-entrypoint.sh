@@ -13,7 +13,7 @@ METRICS_NS=${METRICS_NS:-$DEFAULT_METRICS_NS}
 #echo "[$0] - Metrics Address   --> [$METRICS_ADDR]"
 #echo "[$0] - Metrics Endpoint  --> [$METRICS_ENDPOINT]"
 #echo "[$0] - Metrics Namespace  --> [$METRICS_NS]"
-#echo "[$0] - Running metrics nginx-vts-exporter"
+#echo "[$0] - Running metrics nginx-sts-exporter"
 
-exec nginx-vts-exporter -nginx.scrape_uri=$NGINX_STATUS -telemetry.address $METRICS_ADDR -telemetry.endpoint $METRICS_ENDPOINT -metrics.namespace $METRICS_NS
+exec nginx-sts-exporter -nginx.scrape_uri=$NGINX_STATUS -telemetry.address $METRICS_ADDR -telemetry.endpoint $METRICS_ENDPOINT -metrics.namespace $METRICS_NS
 #fi

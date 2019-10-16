@@ -1,7 +1,7 @@
 FROM        quay.io/prometheus/busybox:latest
-MAINTAINER  Sophos <hnlq.sysu@gmail.com>
+MAINTAINER  Sophos <devops@nutmeg.com>
 
-COPY nginx-vts-exporter  /bin/nginx-vts-exporter
+COPY nginx-sts-exporter  /bin/nginx-sts-exporter
 COPY docker-entrypoint.sh /bin/docker-entrypoint.sh
 
 ENV NGINX_HOST "http://localhost"
