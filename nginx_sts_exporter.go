@@ -183,19 +183,17 @@ func NewExporter(uri string) *Exporter {
 			"requests":    newServerMetric("requests", "requests counter", []string{"host", "code"}),
 			"bytes":       newServerMetric("bytes", "request/response bytes", []string{"host", "direction"}),
 			"cache":       newServerMetric("cache", "cache counter", []string{"host", "status"}),
-			"requestMsec": newServerMetric("requestMsec", "average of request processing times in milliseconds", []string{"host"}),
+			"sessionMsec": newServerMetric("sessionMsec", "average of session processing times in milliseconds", []string{"host"}),
 		},
 		upstreamMetrics: map[string]*prometheus.Desc{
 			"requests":     newUpstreamMetric("requests", "requests counter", []string{"upstream", "code", "backend"}),
 			"bytes":        newUpstreamMetric("bytes", "request/response bytes", []string{"upstream", "direction", "backend"}),
-			"responseMsec": newUpstreamMetric("responseMsec", "average of only upstream/backend response processing times in milliseconds", []string{"upstream", "backend"}),
-			"requestMsec":  newUpstreamMetric("requestMsec", "average of request processing times in milliseconds", []string{"upstream", "backend"}),
+			"sessionMsec":  newUpstreamMetric("sessionMsec", "average of session processing times in milliseconds", []string{"upstream", "backend"}),
 		},
 		filterMetrics: map[string]*prometheus.Desc{
 			"requests":     newFilterMetric("requests", "requests counter", []string{"filter", "filterName", "code"}),
 			"bytes":        newFilterMetric("bytes", "request/response bytes", []string{"filter", "filterName", "direction"}),
-			"responseMsec": newFilterMetric("responseMsec", "average of only upstream/backend response processing times in milliseconds", []string{"filter", "filterName"}),
-			"requestMsec":  newFilterMetric("requestMsec", "average of request processing times in milliseconds", []string{"filter", "filterName"}),
+			"sessionMsec":  newFilterMetric("sessionMsec", "average of session processing times in milliseconds", []string{"filter", "filterName"}),
 		},
 		cacheMetrics: map[string]*prometheus.Desc{
 			"requests": newCacheMetric("requests", "cache requests counter", []string{"zone", "status"}),
